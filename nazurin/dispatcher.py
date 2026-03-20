@@ -4,7 +4,8 @@ from urllib.parse import urljoin
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.enums import UpdateType
-from aiogram.types import Message, Update
+from aiogram.exceptions import TelegramAPIError
+from aiogram.types import BotCommand, Message, Update
 from aiogram.types.reaction_type_emoji import ReactionTypeEmoji
 from aiogram.utils.chat_action import ChatActionMiddleware
 from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
@@ -86,10 +87,85 @@ class NazurinDispatcher(Dispatcher):
                 allowed_updates=self.allowed_updates,
                 drop_pending_updates=True,
             )
+        logger.info(
+            "Command auto sync on startup: enabled={}",
+            config.AUTO_SET_COMMANDS,
+        )
+        if config.AUTO_SET_COMMANDS:
+            await self.set_commands_safe()
         await self.bot.on_startup()
 
     async def on_shutdown(self, *_args):
+        logger.info(
+            "Command auto cleanup on shutdown: enabled={}",
+            config.AUTO_DELETE_COMMANDS_ON_SHUTDOWN,
+        )
+        if config.AUTO_DELETE_COMMANDS_ON_SHUTDOWN:
+            await self.clear_commands_safe()
         await self.bot.on_shutdown()
+
+    def managed_commands(self) -> list[BotCommand]:
+        commands = {}
+        for command in self.commands.list():
+            commands[command.command] = command
+        return list(commands.values())
+
+    async def set_commands_safe(self):
+        managed_commands = self.managed_commands()
+        if not managed_commands:
+            logger.info("Skipped auto setting bot commands: no managed commands found")
+            return
+        try:
+            existing_commands = await self.bot.get_my_commands()
+            merged_commands = {
+                command.command: command for command in existing_commands
+            }
+            for command in managed_commands:
+                merged_commands[command.command] = command
+            await self.bot.set_my_commands(list(merged_commands.values()))
+            logger.info(
+                "Auto set bot commands done: managed={}, existing={}, merged={}",
+                len(managed_commands),
+                len(existing_commands),
+                len(merged_commands),
+            )
+        except TelegramAPIError as error:
+            logger.warning("Failed to auto set bot commands: {}", error)
+        except Exception as error:
+            logger.exception(
+                "Unexpected error when auto setting bot commands: {}",
+                error,
+            )
+
+    async def clear_commands_safe(self):
+        managed_names = {command.command for command in self.managed_commands()}
+        if not managed_names:
+            logger.info("Skipped auto clearing bot commands: no managed commands found")
+            return
+        try:
+            existing_commands = await self.bot.get_my_commands()
+            remaining_commands = [
+                command
+                for command in existing_commands
+                if command.command not in managed_names
+            ]
+            if remaining_commands:
+                await self.bot.set_my_commands(remaining_commands)
+            else:
+                await self.bot.delete_my_commands()
+            logger.info(
+                "Auto clear bot commands done: managed={}, existing={}, remaining={}",
+                len(managed_names),
+                len(existing_commands),
+                len(remaining_commands),
+            )
+        except TelegramAPIError as error:
+            logger.warning("Failed to auto clear bot commands: {}", error)
+        except Exception as error:
+            logger.exception(
+                "Unexpected error when auto clearing bot commands: {}",
+                error,
+            )
 
     async def feed_update(self, bot: Bot, update: Update, **kwargs):
         with logger.contextualize(request=f"update:{update.update_id}"):
