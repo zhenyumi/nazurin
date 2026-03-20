@@ -69,3 +69,9 @@ FEEDBACK_TYPE: FeedbackType = env.enum(
     enum=FeedbackType,
     by_value=True,
 )
+
+AUTO_SET_COMMANDS: bool = env.bool("AUTO_SET_COMMANDS", default=True)
+AUTO_DELETE_COMMANDS_ON_SHUTDOWN: bool = env.bool(
+    "AUTO_DELETE_COMMANDS_ON_SHUTDOWN",
+    default=True,
+)
