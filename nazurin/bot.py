@@ -200,13 +200,7 @@ class NazurinBot(Bot):
         # Send / Forward to gallery & Save to album
         await illust.download()
         if config.GALLERY_ID:
-            if result.source.name == "telegraph":
-                await self.send_message(
-                    config.GALLERY_ID,
-                    illust.metadata["source_url"],
-                )
-            else:
-                await self.send_to_gallery(urls, illust, message)
+            await self.send_to_gallery(urls, illust, message)
 
         await self.storage.store(illust)
         document.data["collected_at"] = time()
