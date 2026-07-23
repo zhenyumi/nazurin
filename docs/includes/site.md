@@ -1,4 +1,4 @@
-|       Name        |              URL               | Commands | Image Collection |
+|       Name        |              URL               | Commands |    Collection    |
 | :---------------: | :----------------------------: | :------: | :--------------: |
 |       Pixiv       |    <https://www.pixiv.net/>    |    ✔     |        ✔         |
 |     Danbooru      | <https://danbooru.donmai.us/>  |    ✔     |        ✔         |
@@ -16,4 +16,5 @@
 |    DeviantArt     | <https://www.deviantart.com/>  |          |        ✔         |
 |      Lofter       |   <https://www.lofter.com/>    |          |        ✔         |
 |   Kemono.party    |    <https://kemono.party/>     |          |        ✔         |
+|     Telegraph     | <https://telegra.ph/>, <https://graph.org/> |          |        ✔         |
 |      Bluesky      |      <https://bsky.app/>       |          |        ✔         |
